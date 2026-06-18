@@ -1,0 +1,95 @@
+export class Holio {
+  constructor(logicalW, logicalH) {
+    this.logicalW = logicalW;
+    this.logicalH = logicalH;
+
+    // 0 = inactive, 1 = present in office (front of room, not door)
+    this.stage = 0;
+
+    // life timer in ms
+    this.timer = 0;
+
+    // cooldown timer in ms (after removal)
+    this.cooldown = 0;
+
+    // preload image references (main will set these globals too, but keep keys)
+    this.officeImgSrc = 'holio.png';
+
+    // constants
+    this.JUMPSCARE_MS = 3000; // 3 seconds until jumpscare
+    this.RESPAWN_COOLDOWN_MS = 6000; // 6 seconds after removal
+  }
+
+  getAILevel(nightNumber) {
+    if (nightNumber === 1) return 0;
+    if (nightNumber === 2) return 6;
+    if (nightNumber === 3) return 6;
+    if (nightNumber === 4) return 7;
+    if (nightNumber === 5) return 8;
+    const base = 8;
+    if (typeof window !== 'undefined' && window.powerOut) return Math.min(20, base + 5);
+    return base;
+  }
+
+  // external check: every time monitor flips down, attempt spawn with chance AI/25
+  trySpawnOnMonitorClose(nightNumber, currentHourString) {
+    // can't spawn if on cooldown or already present
+    if (this.stage === 1) return false;
+    if (this.cooldown > 0) return false;
+
+    let ai = this.getAILevel(nightNumber);
+
+    // At 3AM and 4AM Holio's AI is halved
+    if (currentHourString === '3AM' || currentHourString === '4AM') {
+      ai = Math.floor(ai / 2);
+    }
+
+    if (ai <= 0) return false;
+
+    if (Math.random() * 25 < ai) {
+      this.stage = 1;
+      this.timer = 0;
+      return true;
+    }
+    return false;
+  }
+
+  // Called when monitor flipped back up to remove Holio immediately
+  removeIfVisible() {
+    if (this.stage === 1) {
+      this.stage = 0;
+      this.timer = 0;
+      this.cooldown = this.RESPAWN_COOLDOWN_MS;
+    }
+  }
+
+  // dt in ms, triggerJumpscare should be called with 'holio'
+  update(dt, nightNumber, currentHourString, isMonitorOpen, triggerJumpscare) {
+    // countdown cooldown regardless
+    if (this.cooldown > 0) {
+      this.cooldown = Math.max(0, this.cooldown - dt);
+    }
+
+    if (this.stage !== 1) return;
+
+    // If player flips monitor down (monitor closed) Holio appears; to remove, player must flip monitor back up
+    if (isMonitorOpen) {
+      // If monitor is open while Holio is present, it should be removed immediately (main calls removeIfVisible on open too)
+      // But keep here as safeguard:
+      this.removeIfVisible();
+      return;
+    }
+
+    // accumulate time present
+    this.timer += dt;
+
+    if (this.timer >= this.JUMPSCARE_MS) {
+      // trigger jumpscare and clear (jumpscare will end the night)
+      triggerJumpscare('holio');
+      // ensure cleared and cooldown started
+      this.stage = 0;
+      this.timer = 0;
+      this.cooldown = this.RESPAWN_COOLDOWN_MS;
+    }
+  }
+}
