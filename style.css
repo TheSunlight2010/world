@@ -1,0 +1,36 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+html, body {
+  height: 100%;
+}
+body {
+  background-color: #111;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  user-select: none;
+}
+#gameContainer {
+  position: relative;
+  width: min(98vw, 1024px);
+  /* Preserve a 16:9 aspect ratio so the game never stretches */
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 4px solid #333;
+  box-shadow: 0 0 20px rgba(0,0,0,0.8);
+  background: #0f0f0f;
+}
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: auto;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
